@@ -15,7 +15,7 @@
         "fps": 25,
         "bitrate_kbps": 2500
       },
-      "rtsp_url": "rtsp://192.168.1.30:8554/",
+      "rtsp_url": "rtsp://172.19.5.50:8554/",
       "webrtc_url": "http://localhost:8889/phone",
       "hls_url": "http://live.corp8.cloud/live/stream/3/index.m3u8"
     }
