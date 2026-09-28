@@ -18,18 +18,19 @@ const STATUS_COLORS: Record<string, string> = {
   inactive: "#94a3b8",
 };
 
+function normalizeStatus(raw: string | null | undefined): string {
+  const s = (raw ?? "").trim().toLowerCase();
+  if (["online", "live", "active", "up", "connected", "running"].includes(s)) return "online";
+  if (s === "maintenance") return "maintenance";
+  return "offline";
+}
+
 function createCameraIcon(status: string) {
   const color = STATUS_COLORS[status] || STATUS_COLORS.inactive;
+  const pulse = status === "online" ? `<span class="cam-ring"></span>` : "";
   return L.divIcon({
     className: "",
-    html: `<div style="
-      width: 18px; height: 18px;
-      background: ${color};
-      border: 3px solid #ffffff;
-      border-radius: 50%;
-      box-shadow: 0 0 10px ${color}cc, 0 2px 5px rgba(0,0,0,0.3);
-      cursor: pointer;
-    "></div>`,
+    html: `<div class="cam-marker" style="--c:${color}">${pulse}<span class="cam-dot"></span></div>`,
     iconSize: [18, 18],
     iconAnchor: [9, 9],
   });
@@ -85,23 +86,23 @@ export default function CameraMap({
     markers.clearLayers();
 
     const validCameras = cameras.filter(
-      (c) => c.location.latitude != null && c.location.longitude != null
+      (c) => c.location?.latitude != null && c.location?.longitude != null
     );
 
     validCameras.forEach((cam) => {
+      const status = normalizeStatus(cam.status);
       const marker = L.marker(
         [cam.location.latitude!, cam.location.longitude!],
-        { icon: createCameraIcon(cam.status) }
+        { icon: createCameraIcon(status), zIndexOffset: status === "online" ? 500 : 0 }
       );
 
-      // Tooltip on hover with camera details
       const tooltipHtml = `
         <div class="camera-tooltip-content">
           <div class="cam-name">${cam.name}</div>
           <div class="cam-detail">${cam.camera_id}</div>
           <div class="cam-status">
-            <span class="status-dot ${cam.status}"></span>
-            <span style="text-transform: capitalize;">${cam.status}</span>
+            <span class="status-dot ${status}"></span>
+            <span style="text-transform: capitalize;">${status === "online" ? "online · live" : status}</span>
           </div>
           <div class="cam-detail">${cam.location.address || "—"}</div>
           <div class="cam-detail">${cam.department || ""} ${cam.district ? `· ${cam.district}` : ""}</div>
@@ -122,7 +123,6 @@ export default function CameraMap({
       markers.addLayer(marker);
     });
 
-    // Fit bounds if cameras exist
     if (validCameras.length > 0) {
       const bounds = L.latLngBounds(
         validCameras.map((c) => [c.location.latitude!, c.location.longitude!])
@@ -144,11 +144,44 @@ export default function CameraMap({
     }
   }, [selectedCameraId, cameras]);
 
+  const counts = { online: 0, offline: 0, maintenance: 0 } as Record<string, number>;
+  cameras.forEach((c) => {
+    counts[normalizeStatus(c.status)] += 1;
+  });
+
   return (
-    <div
-      className="map-container"
-      style={{ height }}
-      ref={containerRef}
-    />
+    <div style={{ position: "relative" }}>
+      <div className="map-container" style={{ height }} ref={containerRef} />
+      <div
+        style={{
+          position: "absolute",
+          bottom: 28,
+          left: 12,
+          zIndex: 1000,
+          background: "rgba(15,23,42,0.85)",
+          color: "#e2e8f0",
+          padding: "6px 10px",
+          borderRadius: 8,
+          fontSize: "0.72rem",
+          display: "flex",
+          gap: 12,
+        }}
+      >
+        {(["online", "offline", "maintenance"] as const).map((s) => (
+          <span key={s} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <span
+              style={{
+                width: 9,
+                height: 9,
+                borderRadius: "50%",
+                background: STATUS_COLORS[s],
+                display: "inline-block",
+              }}
+            />
+            {s === "online" ? "Live" : s[0].toUpperCase() + s.slice(1)} ({counts[s]})
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }

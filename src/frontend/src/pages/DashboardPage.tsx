@@ -62,8 +62,15 @@ export default function DashboardPage() {
 
   if (loading) return <div className="spinner" />;
 
-  const onlineCount = cameras.filter((c) => c.status === "online").length;
-  const offlineCount = cameras.filter((c) => c.status === "offline").length;
+  const isOnline = (s?: string) =>
+    ["online", "live", "active", "up", "connected", "running"].includes((s ?? "").trim().toLowerCase());
+  const isMaintenance = (s?: string) => (s ?? "").trim().toLowerCase() === "maintenance";
+
+  const onlineCount = summary?.cameras_online ?? cameras.filter((c) => isOnline(c.status)).length;
+  const maintenanceCount =
+    summary?.cameras_maintenance ?? cameras.filter((c) => isMaintenance(c.status)).length;
+  const offlineCount =
+    summary?.cameras_offline ?? cameras.length - onlineCount - maintenanceCount;
 
   return (
     <div>
@@ -82,7 +89,8 @@ export default function DashboardPage() {
           </span>
           <span className="stat-value">{summary?.total_cameras ?? cameras.length}</span>
           <span style={{ fontSize: "0.75rem", color: "var(--green)" }}>
-            {onlineCount} online · {offlineCount} offline
+                        {onlineCount} online · {offlineCount} offline
+            {maintenanceCount > 0 ? ` · ${maintenanceCount} maintenance` : ""}
           </span>
         </div>
         <div className="stat-card">

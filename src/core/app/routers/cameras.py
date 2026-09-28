@@ -1,5 +1,6 @@
 import csv
 import io
+import hashlib
 import random
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
@@ -22,7 +23,33 @@ GUJARAT_LNG_RANGE = (68.2, 74.5)
 def _random_gujarat_coords():
     lat = round(random.uniform(*GUJARAT_LAT_RANGE), 6)
     lng = round(random.uniform(*GUJARAT_LNG_RANGE), 6)
+
     return lat, lng
+
+
+ONLINE_WORDS = {"online", "live", "active", "up", "connected", "running"}
+OFFLINE_WORDS = {"offline", "down", "inactive", "disconnected", "stopped"}
+
+
+def normalize_status(raw) -> str:
+    """Map any stored status text to online / offline / maintenance."""
+    s = (raw or "").strip().lower()
+    if s in ONLINE_WORDS:
+        return "online"
+    if s == "maintenance":
+        return "maintenance"
+    return "offline"  # includes offline words, empty and unknown values
+
+
+def _fallback_coords(camera_id: str):
+    """Stable (same every time) position inside Gujarat for cameras that have
+    no coordinates, so they still appear on the map."""
+    h = int(hashlib.md5(camera_id.encode()).hexdigest(), 16)
+    lat = GUJARAT_LAT_RANGE[0] + (h % 10000) / 10000 * (GUJARAT_LAT_RANGE[1] - GUJARAT_LAT_RANGE[0])
+    lng = GUJARAT_LNG_RANGE[0] + ((h // 10000) % 10000) / 10000 * (GUJARAT_LNG_RANGE[1] - GUJARAT_LNG_RANGE[0])
+    return round(lat, 6), round(lng, 6)
+
+
 
 router = APIRouter(prefix="/cameras", tags=["cameras"])
 
@@ -30,15 +57,18 @@ router = APIRouter(prefix="/cameras", tags=["cameras"])
 # ---------- helpers: flat DB row <-> nested contract shape ----------
 
 def _camera_to_out(cam: models.Camera) -> dict:
+    lat, lng = cam.latitude, cam.longitude
+    if lat is None or lng is None:
+        lat, lng = _fallback_coords(cam.camera_id)
     return {
         "camera_id": cam.camera_id,
         "organization_id": cam.organization_id,
         "organization_name": cam.organization_name,
         "name": cam.name,
-        "status": cam.status,
+        "status": normalize_status(cam.status),
         "location": {
-            "latitude": cam.latitude,
-            "longitude": cam.longitude,
+            "latitude": lat,
+            "longitude": lng,
             "address": cam.address,
         },
         "camera_type": cam.camera_type,
@@ -60,7 +90,6 @@ def _camera_to_out(cam: models.Camera) -> dict:
         "install_date": cam.install_date,
         "last_health_check": cam.last_health_check,
     }
-
 
 def _build_camera_row(payload: schemas.CameraCreate) -> models.Camera:
     props = payload.properties or schemas.PropertiesIn()
