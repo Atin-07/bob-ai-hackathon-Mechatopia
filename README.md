@@ -10,8 +10,8 @@
 |---|---|
 | **Team Name** | Mechatopia |
 | **Track** | AI |
-| **Team Lead** | TODO_LEAD_NAME — TODO_LEAD_EMAIL |
-| **Members** | TODO_LEAD_NAME, TODO_MEMBER_2_NAME, TODO_MEMBER_3_NAME |
+| **Team Lead** | Mitul Chowdhury |
+| **Members** | Atin Srivastava, Suryansh Raj Singh |
 
 ---
 
