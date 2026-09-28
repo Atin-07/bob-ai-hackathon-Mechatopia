@@ -4,10 +4,13 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
+from config import settings
 from db import init_db, close_db
 from ingestion.batch_receiver import router as batch_router
 from events.search_person import router as search_router
+from watchlist.watchlist_api import router as watchlist_router, REFERENCE_DIR
 from worker.frame_worker import frame_worker
 from jobs.retention_cleanup import retention_cleanup_loop
 
@@ -47,16 +50,26 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Person Tracking Service", lifespan=lifespan)
 
+# No auth/cookies, so any frontend origin is allowed.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5174"],  # add other dev/prod origins as needed
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 app.include_router(batch_router)
 app.include_router(search_router)
+app.include_router(watchlist_router)
+
+# Serve saved face crops so the browser can show them:
+#   crop_image_path "./crops/<event_id>.jpg"  ->  http://localhost:8001/crops/<event_id>.jpg
+# (config.py already creates CROP_STORAGE_DIR at import time.)
+app.mount("/crops", StaticFiles(directory=settings.CROP_STORAGE_DIR), name="crops")
+
+# Serve watchlist reference photos:  photo_url "/reference/<person_id>.jpg"
+app.mount("/reference", StaticFiles(directory=REFERENCE_DIR), name="reference")
 
 
 @app.get("/health")

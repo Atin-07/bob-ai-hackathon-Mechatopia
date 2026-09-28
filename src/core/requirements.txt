@@ -1,19 +1,11 @@
 fastapi
 uvicorn[standard]
-sqlalchemy
+sqlalchemy>=2.0
 asyncpg
-psycopg2-binary
+psycopg[binary]
 pgvector
 python-dotenv
 pydantic
 pydantic-settings
 python-multipart
-# NOTE: do NOT use python-jose — on some setups (especially Windows) pip
-# resolves the package name "jose" to an old, unrelated, unmaintained
-# Python-2-only library instead of python-jose, causing a SyntaxError on
-# import. PyJWT avoids this entirely since its package/import name is
-# unambiguous.
-PyJWT
-passlib[bcrypt]
-bcrypt==4.2.1
 websockets

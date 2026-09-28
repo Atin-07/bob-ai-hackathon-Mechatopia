@@ -112,12 +112,9 @@ class Pipeline:
             if not encoded:
                 return
             payload = self.payload_builder.build(encoded)
-            vehicle_ok = await self.dispatcher.submit_vehicle(payload)
             face_ok = await self.dispatcher.submit_face(payload)
-            if not vehicle_ok:
-                logger.warning("Vehicle AI queue full, batch dropped for vehicle side")
             if not face_ok:
-                logger.warning("Face AI queue full, batch dropped for face side")
+                logger.warning("Face AI queue full, batch dropped")
 
         await self.batcher.run(on_batch)
 

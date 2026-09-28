@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 from fastapi import APIRouter, UploadFile, File, Query
 from sqlalchemy import text
+from starlette.concurrency import run_in_threadpool
 
 from db import get_session
 from schemas import SearchResponseOut, SearchMatchOut
@@ -20,12 +21,16 @@ router = APIRouter()
 async def search_person(
     file: UploadFile = File(...),
     top_k: int = Query(10, ge=1, le=100),
+    min_similarity: float = Query(0.0, ge=0.0, le=1.0),
 ):
     """
     Accepts an uploaded reference photo, embeds it, and runs a pgvector
-    nearest-neighbor search directly against person_events. This is a
-    standalone search feature — separate from watchlist alerting, so it
+    nearest-neighbor search directly against person_events (every camera).
+    Standalone search feature -- separate from watchlist alerting, so it
     does NOT call match_watchlist().
+
+    min_similarity (0-1) drops weak matches; default 0 returns the top_k
+    closest sightings regardless of how close they are.
     """
     raw_bytes = await file.read()
     np_arr = np.frombuffer(raw_bytes, dtype=np.uint8)
@@ -34,7 +39,14 @@ async def search_person(
     if image is None:
         return SearchResponseOut(matches=[])
 
-    query_embedding = embed_reference_photo(image)
+    try:
+        # Heavy CPU work -> thread pool so the frame worker isn't blocked
+        query_embedding = await run_in_threadpool(embed_reference_photo, image)
+    except (ValueError, RuntimeError) as e:
+        # No face found / model problem -> empty result instead of a 500
+        logger.warning(f"Search photo unusable: {e}")
+        return SearchResponseOut(matches=[])
+
     embedding_literal = _embedding_to_pgvector_literal(query_embedding)
 
     async with get_session() as session:
@@ -46,9 +58,9 @@ async def search_person(
                     camera_id,
                     detected_at,
                     crop_image_path,
-                    1 - (embedding <=> :query_embedding) AS similarity_score
+                    1 - (embedding <=> CAST(:query_embedding AS VECTOR)) AS similarity_score
                 FROM person_events
-                ORDER BY embedding <=> :query_embedding
+                ORDER BY embedding <=> CAST(:query_embedding AS VECTOR)
                 LIMIT :top_k
                 """
             ),
@@ -64,6 +76,7 @@ async def search_person(
                 crop_image_path=row.crop_image_path,
             )
             for row in rows
+            if float(row.similarity_score) >= min_similarity
         ]
 
     return SearchResponseOut(matches=matches)
