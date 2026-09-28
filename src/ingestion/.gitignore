@@ -1,0 +1,18 @@
+# ==========================================
+# Environment Variables & Secrets
+# ==========================================
+.env
+.env.local
+.env.*.local
+**/__pycache__/
+
+
+# ==========================================
+# Application & Editor Caches
+# ==========================================
+.cache/
+.clangd/
+
+#Folder
+for_tesing_only/
+venv/

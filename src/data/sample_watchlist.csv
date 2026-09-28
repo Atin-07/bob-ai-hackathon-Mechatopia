@@ -1,0 +1,5 @@
+entry_type,value,reason
+vehicle,GJ01AB1234,Stolen vehicle - reported Aug 2026
+vehicle,GJ05CD5678,Wanted in theft case
+vehicle,GJ18XY9999,Blacklisted - suspect vehicle
+person,unknown_001,Wanted person - missing case

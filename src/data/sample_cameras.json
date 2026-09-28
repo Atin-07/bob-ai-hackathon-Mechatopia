@@ -1,0 +1,59 @@
+{
+  "cameras": [
+    {
+      "camera_id": "CAM-001",
+      "organization_id": "ORG-POLICE",
+      "organization_name": "Police Department",
+      "name": "Camera 01",
+      "status": "online",
+      "location": { "latitude": 23.0225, "longitude": 72.5714, "address": "Ahmedabad" },
+      "camera_type": "IP",
+      "properties": { "codec": "H264", "width": 1920, "height": 1080 },
+      "stream": {
+        "rtsp": "rtsp://demo-host:8554/stream/1",
+        "webrtc": "http://demo-host:8889/stream/1/whep",
+        "hls": "http://demo-host/live/stream/1/index.m3u8"
+      },
+      "department": "Home",
+      "district": "Ahmedabad"
+    },
+    {
+      "camera_id": "CAM-007",
+      "organization_id": "ORG-TRANSPORT",
+      "organization_name": "Transport Department",
+      "name": "Camera 07",
+      "status": "online",
+      "location": { "latitude": 21.1702, "longitude": 72.8311, "address": "Surat" },
+      "camera_type": "IP",
+      "properties": { "codec": "H264", "width": 1920, "height": 1080 },
+      "stream": { "webrtc": "http://demo-host:8889/stream/7/whep" },
+      "department": "RTO",
+      "district": "Surat"
+    },
+    {
+      "camera_id": "CAM-003",
+      "organization_id": "ORG-POLICE",
+      "name": "Camera 03",
+      "status": "maintenance",
+      "location": { "latitude": 22.3072, "longitude": 73.1812, "address": "Vadodara" },
+      "camera_type": "IP",
+      "properties": { "codec": "H264", "width": 1280, "height": 720 },
+      "stream": { "webrtc": "http://demo-host:8889/stream/3/whep" },
+      "department": "Home",
+      "district": "Vadodara"
+    },
+    {
+      "camera_id": "CAM-015",
+      "organization_id": "ORG-MUNICIPAL",
+      "organization_name": "Municipal Corporation",
+      "name": "Camera 15",
+      "status": "online",
+      "location": { "latitude": 22.4707, "longitude": 70.0577, "address": "Jamnagar" },
+      "camera_type": "IP",
+      "properties": { "codec": "H264", "width": 1920, "height": 1080 },
+      "stream": { "webrtc": "http://demo-host:8889/stream/15/whep" },
+      "department": "Municipal Corporation",
+      "district": "Jamnagar"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "organization_id": "ORG-MUNICIPAL",
+  "organization_name": "Municipal Corporation",
+  "cameras": [
+    {
+      "camera_id": "CAM-003",
+      "organization_id": "ORG-MUNICIPAL",
+      "name": "Municipal Camera 1",
+      "location": "Test Location 3",
+      "codec": "H264",
+      "live": true,
+      "stream_properties": {
+        "width": 1280,
+        "height": 720,
+        "fps": 25,
+        "bitrate_kbps": 2500
+      },
+      "rtsp_url": "rtsp://192.168.1.30:8554/",
+      "webrtc_url": "http://localhost:8889/phone",
+      "hls_url": "http://live.corp8.cloud/live/stream/3/index.m3u8"
+    }
+  ]
+}

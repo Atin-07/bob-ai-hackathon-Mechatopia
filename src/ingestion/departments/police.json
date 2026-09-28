@@ -1,0 +1,23 @@
+{
+  "organization_id": "ORG-POLICE",
+  "organization_name": "Police Department",
+  "cameras": [
+    {
+      "camera_id": "CAM-001",
+      "organization_id": "ORG-POLICE",
+      "name": "Police Camera 1",
+      "location": "Test Location 1",
+      "codec": "H264",
+      "live": true,
+      "stream_properties": {
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "bitrate_kbps": 4000
+      },
+      "rtsp_url": "rtsp://live.corp8.cloud:8554/stream/1",
+      "webrtc_url": "http://live.corp8.cloud:8889/stream/1/whep",
+      "hls_url": "http://live.corp8.cloud/live/stream/1/index.m3u8"
+    }
+  ]
+}
