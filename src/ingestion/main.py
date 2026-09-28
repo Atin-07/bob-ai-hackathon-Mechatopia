@@ -14,25 +14,27 @@ import asyncio
 import logging
 import signal
 import sys
-import uvicorn
-from app import app
+
 from dotenv import load_dotenv
 
-# Must run before config.settings is imported anywhere, or env values
-# loaded here won't take effect (Settings reads os.environ at import time).
+# Must run before config.settings (or anything that reads os.environ) is
+# imported, or values from .env won't take effect.
 load_dotenv()
-from catalogue.catalog_client import CatalogClient
-from catalogue.gls_sync import GLSSync
-from catalogue.models import Camera
-from config.settings import get_settings
-from pipeline.batcher import Batcher
-from pipeline.buffer_manager import BufferManager
-from pipeline.decoder import DecodedFrame
-from pipeline.dispatcher import AIDispatcher
-from pipeline.frame_encoder import encode_batch
-from pipeline.payload_builder import PayloadBuilder
-from pipeline.sampler import FrameSampler
-from pipeline.stream_manager import StreamManager
+
+import uvicorn  # noqa: E402
+from app import app  # noqa: E402
+from catalogue.catalog_client import CatalogClient  # noqa: E402
+from catalogue.gls_sync import GLSSync  # noqa: E402
+from catalogue.models import Camera  # noqa: E402
+from config.settings import get_settings  # noqa: E402
+from pipeline.batcher import Batcher  # noqa: E402
+from pipeline.buffer_manager import BufferManager  # noqa: E402
+from pipeline.decoder import DecodedFrame  # noqa: E402
+from pipeline.dispatcher import AIDispatcher  # noqa: E402
+from pipeline.frame_encoder import encode_batch  # noqa: E402
+from pipeline.payload_builder import PayloadBuilder  # noqa: E402
+from pipeline.sampler import FrameSampler  # noqa: E402
+from pipeline.stream_manager import StreamManager  # noqa: E402
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("pipeline_main")
@@ -121,8 +123,12 @@ class Pipeline:
     async def _push_gls_loop(self) -> None:
         try:
             while True:
-                cameras = await self.catalog_client.fetch_catalogue()
-                await self.gls_sync.push(cameras)
+                try:
+                    cameras = await self.catalog_client.fetch_catalogue()
+                    await self.gls_sync.push(cameras)
+                except Exception:
+                    # Core may not be up yet; keep retrying instead of dying.
+                    logger.exception("GLS push failed, will retry")
                 await asyncio.sleep(self.settings.gls_push_interval_seconds)
         except asyncio.CancelledError:
             logger.info("GLS push loop stopped")
@@ -162,14 +168,6 @@ async def main() -> None:
     if sys.platform != "win32":
         for sig in (signal.SIGINT, signal.SIGTERM):
             loop.add_signal_handler(sig, stop_event.set)
-    else:
-        # Windows fallback: rely on KeyboardInterrupt
-        async def wait_for_stop():
-            try:
-                await stop_event.wait()
-            except asyncio.CancelledError:
-                pass
-        asyncio.create_task(wait_for_stop())
 
     config = uvicorn.Config(
         app,
@@ -178,13 +176,15 @@ async def main() -> None:
         log_level=settings.log_level.lower(),
     )
     server = uvicorn.Server(config)
+    # We handle signals ourselves so the pipeline shuts down cleanly.
+    server.install_signal_handlers = lambda: None
     server_task = asyncio.create_task(server.serve())
 
     await pipeline.start()
 
     try:
         await stop_event.wait()
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, asyncio.CancelledError):
         stop_event.set()
 
     await pipeline.stop()
@@ -193,4 +193,7 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass

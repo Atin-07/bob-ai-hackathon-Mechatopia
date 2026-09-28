@@ -1,8 +1,12 @@
 .venv
 venv
-test_send_batch.py
 __pycache__/
 **/__pycache__/
 .env
 node_modules/
 .git
+test_send_batch.py
+crops/
+reference_photos/
+src/frontend/dist/
+*.tsbuildinfo

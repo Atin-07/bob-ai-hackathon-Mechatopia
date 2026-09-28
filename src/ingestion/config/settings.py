@@ -26,8 +26,8 @@ def _get_float(key: str, default: float) -> float:
 class Settings(BaseModel):
     """Runtime configuration, loaded once from environment variables."""
 
-    # --- Catalogue ---
-    catalogue_base_url: str = _get_str("CATALOGUE_BASE_URL", "http://localhost:8000")
+    # --- Catalogue (ingestion serves its own mock catalogue on SERVER_PORT) ---
+    catalogue_base_url: str = _get_str("CATALOGUE_BASE_URL", "http://localhost:3008")
     catalogue_refresh_interval_seconds: float = _get_float(
         "CATALOGUE_REFRESH_INTERVAL_SECONDS", 30.0
     )
@@ -61,14 +61,17 @@ class Settings(BaseModel):
     dispatch_timeout_seconds: float = _get_float("DISPATCH_TIMEOUT_SECONDS", 5.0)
     dispatch_queue_max_size: int = _get_int("DISPATCH_QUEUE_MAX_SIZE", 50)
 
-    # --- GLS registry ---
-    gls_registry_url: str = _get_str("GLS_REGISTRY_URL", "http://localhost:8000/cameras/gls-sync")
+    # --- GLS registry (core backend) ---
+    gls_registry_url: str = _get_str(
+        "GLS_REGISTRY_URL", "http://localhost:8000/cameras/gls-sync"
+    )
     gls_push_interval_seconds: float = _get_float("GLS_PUSH_INTERVAL_SECONDS", 30.0)
-    service_key: str = _get_str("SERVICE_KEY", "shared-secret-agree-with-teammate")
+    # Must match SERVICE_KEY in core's .env (core default: netra-service-key-2024)
+    service_key: str = _get_str("SERVICE_KEY", "netra-service-key-2024")
 
-    # --- Server (for our own mock /api/ingest + health) ---
+    # --- Server (ingestion's own mock /api/ingest + health) ---
     server_host: str = _get_str("SERVER_HOST", "0.0.0.0")
-    server_port: int = _get_int("SERVER_PORT", 8000)
+    server_port: int = _get_int("SERVER_PORT", 3008)
 
     # --- Logging ---
     log_level: str = _get_str("LOG_LEVEL", "INFO")
@@ -79,4 +82,3 @@ def get_settings() -> Settings:
     """Return the process-wide Settings singleton."""
 
     return Settings()
-
